@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>System Control</title>
+  <hta:application
+    applicationname="System Control"
+    border="thin"
+    caption="yes"
+    icon="SystemControl.ico"
+    maximizebutton="yes"
+    minimizebutton="yes"
+    scroll="no"
+    singleinstance="yes"
+    sysmenu="yes"
+    windowstate="normal">
+  <style>
+    * { box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; }
+    body {
+      margin: 0;
+      min-width: 900px;
+      overflow: hidden;
+      color: #eef3ef;
+      background-color: #080b0a;
+      font-family: "Segoe UI", Arial, sans-serif;
+    }
+    button, input, textarea { font-family: "Segoe UI", Arial, sans-serif; }
+    button { color: #eef3ef; }
+
+    .app { display: flex; width: 100%; height: 100%; }
+    .sidebar {
+      position: relative;
+      width: 244px;
+      min-width: 244px;
+      height: 100%;
+      border-right: 1px solid #26302a;
+      background: #0a0e0c;
+    }
+    .brand {
+      height: 108px;
+      padding: 25px 22px;
+      border-bottom: 1px solid #26302a;
+    }
+    .brand-mark {
+      float: left;
+      width: 29px;
+      height: 29px;
+      margin: 8px 16px 0 4px;
+      border: 6px solid #8dff78;
+      transform: rotate(45deg);
+    }
+    .brand strong { display: block; padding-top: 4px; font-size: 14px; letter-spacing: 3px; }
+    .brand small { display: block; margin-top: 7px; color: #78847d; font: 10px Consolas, monospace; letter-spacing: 1px; }
+
+    .nav { padding: 24px 13px; }
+    .nav-button {
+      display: block;
+      width: 100%;
+      height: 54px;
+      margin-bottom: 5px;
+      padding: 0;
+      border: 1px solid transparent;
+      background: transparent;
+      color: #9ca7a0;
+      text-align: left;
+      cursor: pointer;
+    }
+    .nav-button:hover { color: #ffffff; background: #111713; }
+    .nav-button.active { color: #ffffff; border-color: #35433b; background: #121814; }
+    .nav-number { display: inline-block; width: 45px; color: #8dff78; font: 10px Consolas, monospace; text-align: center; }
+
+    .system-box {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      padding: 20px;
+      border-top: 1px solid #26302a;
+      background: #090d0b;
+    }
+    .system-row { margin-bottom: 9px; color: #78847d; font: 9px Consolas, monospace; letter-spacing: 1px; }
+    .system-row b { float: right; color: #8dff78; font-weight: normal; }
+    .bars { height: 30px; margin-top: 17px; white-space: nowrap; }
+    .bars i { display: inline-block; width: 16%; margin-right: 3%; vertical-align: bottom; border-top: 1px solid #8dff78; background: #173420; }
+    .bars i:nth-child(1) { height: 10px; }.bars i:nth-child(2) { height: 18px; }.bars i:nth-child(3) { height: 25px; }.bars i:nth-child(4) { height: 14px; }.bars i:nth-child(5) { height: 22px; margin-right: 0; }
+
+    .main { position: relative; flex: 1; min-width: 0; height: 100%; overflow: auto; }
+    .topbar {
+      height: 108px;
+      padding: 22px 38px;
+      border-bottom: 1px solid #26302a;
+      background: #090c0b;
+    }
+    .eyebrow, .module-code { color: #8dff78; font: 10px Consolas, monospace; letter-spacing: 2px; }
+    h1 { margin: 7px 0 0; font-size: 27px; font-weight: 500; }
+    .clock-box { float: right; margin-top: -42px; padding-left: 22px; border-left: 1px solid #26302a; }
+    .clock-box small { display: block; color: #78847d; font: 8px Consolas, monospace; letter-spacing: 1px; }
+    .clock-box strong { display: block; margin-top: 5px; font: 15px Consolas, monospace; }
+    .online-dot { display: inline-block; width: 7px; height: 7px; margin-right: 10px; background: #8dff78; box-shadow: 0 0 12px #8dff78; }
+
+    .page { display: none; padding: 34px 38px 50px; }
+    .page.active { display: block; }
+    .toolbar { min-height: 58px; margin-bottom: 26px; }
+    .toolbar-copy { float: left; }
+    .toolbar-copy p { margin: 8px 0 0; color: #7f8b84; font-size: 13px; }
+    .toolbar-action { float: right; }
+
+    .primary, .secondary, .browse {
+      height: 42px;
+      padding: 0 18px;
+      border: 0;
+      font-size: 10px;
+      font-weight: bold;
+      letter-spacing: 1px;
+      cursor: pointer;
+    }
+    .primary { color: #071008; background: #8dff78; }
+    .primary:hover { background: #b1ffa3; }
+    .secondary, .browse { border: 1px solid #3a4940; background: #121814; }
+    .secondary:hover, .browse:hover { border-color: #8dff78; }
+
+    .launcher-list { margin: 0 -6px; overflow: hidden; }
+    .launcher-card {
+      float: left;
+      width: calc(50% - 12px);
+      height: 108px;
+      margin: 0 6px 12px;
+      padding: 17px;
+      border: 1px solid #26302a;
+      background: #0e1310;
+    }
+    .launcher-card:hover { border-color: #405147; background: #111813; }
+    .file-badge {
+      float: left;
+      width: 52px;
+      height: 52px;
+      margin: 10px 15px 0 0;
+      padding-top: 19px;
+      border: 1px solid #405147;
+      color: #8dff78;
+      background: #173420;
+      font: 10px Consolas, monospace;
+      text-align: center;
+    }
+    .launcher-info { margin: 10px 132px 0 67px; overflow: hidden; }
+    .launcher-name { display: block; margin-bottom: 8px; overflow: hidden; font-size: 14px; white-space: nowrap; text-overflow: ellipsis; }
+    .launcher-path { display: block; overflow: hidden; color: #78847d; font: 10px Consolas, monospace; white-space: nowrap; text-overflow: ellipsis; }
+    .card-actions { float: right; margin-top: -39px; white-space: nowrap; }
+    .card-button {
+      height: 32px;
+      margin-left: 3px;
+      padding: 0 9px;
+      border: 1px solid #26302a;
+      color: #aeb8b1;
+      background: #090d0b;
+      font-size: 9px;
+      cursor: pointer;
+    }
+    .card-button:hover { color: #ffffff; border-color: #8dff78; }
+    .card-button.run { color: #8dff78; }
+    .card-button.remove:hover { color: #ff7773; border-color: #ff7773; }
+
+    .empty {
+      height: 340px;
+      padding-top: 112px;
+      border: 1px dashed #26302a;
+      background: #0c100e;
+      text-align: center;
+    }
+    .empty.hidden { display: none; }
+    .empty-icon { width: 50px; height: 50px; margin: 0 auto 20px; border: 1px solid #405147; color: #8dff78; font: 30px/46px Consolas, monospace; }
+    .empty strong { display: block; font: 12px Consolas, monospace; letter-spacing: 2px; }
+    .empty p { color: #78847d; font-size: 12px; }
+    .empty button { border: 0; color: #8dff78; background: transparent; font: 10px Consolas, monospace; cursor: pointer; }
+
+    .save-state { float: right; color: #8dff78; font: 10px Consolas, monospace; letter-spacing: 1px; }
+    .notes-panel { clear: both; border: 1px solid #26302a; background: #0c100e; }
+    .notes-meta, .notes-footer { height: 42px; padding: 14px 16px; color: #78847d; font: 9px Consolas, monospace; letter-spacing: 1px; }
+    .notes-meta { border-bottom: 1px solid #26302a; }
+    .notes-footer { border-top: 1px solid #26302a; }
+    .right { float: right; }
+    #notes { display: block; width: 100%; height: 430px; padding: 22px; resize: none; border: 0; outline: 0; color: #e0e8e2; background: transparent; font: 14px/1.7 Consolas, monospace; }
+
+    .modal-shade { display: none; position: fixed; z-index: 20; top: 0; right: 0; bottom: 0; left: 0; padding-top: 10vh; background: rgba(2, 5, 3, .88); }
+    .modal-shade.visible { display: block; }
+    .modal { width: 570px; margin: 0 auto; padding: 25px; border: 1px solid #405147; background: #0d120f; box-shadow: 0 25px 90px #000000; }
+    .modal-head { margin-bottom: 26px; }
+    .modal-head h2 { margin: 7px 0 0; font-size: 22px; font-weight: 500; }
+    .close-button { float: right; width: 38px; height: 38px; margin-top: -42px; border: 0; color: #78847d; background: transparent; font-size: 24px; cursor: pointer; }
+    .field { display: block; margin-top: 18px; }
+    .field-label { display: block; margin-bottom: 8px; color: #78847d; font: 9px Consolas, monospace; letter-spacing: 1px; }
+    .text-input { width: 100%; height: 43px; padding: 0 12px; border: 1px solid #26302a; outline: 0; color: #ffffff; background: #080c0a; }
+    .text-input:focus { border-color: #8dff78; }
+    .path-row { display: flex; }
+    .path-row .text-input { flex: 1; }
+    .path-row .browse { margin-left: 8px; }
+    .error { min-height: 18px; margin: 12px 0 0; color: #ff7773; font-size: 11px; }
+    .modal-actions { margin-top: 14px; padding-top: 19px; border-top: 1px solid #26302a; text-align: right; }
+    .modal-actions button { margin-left: 6px; }
+    #file-picker { position: absolute; left: -10000px; }
+
+    .toast { position: fixed; z-index: 30; right: 22px; bottom: -80px; max-width: 400px; padding: 14px 17px; border-left: 3px solid #8dff78; background: #151c17; box-shadow: 0 12px 40px #000000; font-size: 12px; opacity: 0; transition: all .2s; }
+    .toast.visible { bottom: 22px; opacity: 1; }
+    .toast.bad { border-color: #ff7773; }
+
+    @media (max-width: 1080px) {
+      .sidebar { width: 205px; min-width: 205px; }
+      .launcher-card { float: none; width: calc(100% - 12px); }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="brand-mark"></span>
+        <strong>SYSTEM</strong>
+        <small>CONTROL // 01</small>
+      </div>
+      <div class="nav">
+        <button class="nav-button active" id="nav-launchers" onclick="showPage('launchers')"><span class="nav-number">01</span>Быстрый пуск</button>
+        <button class="nav-button" id="nav-notes" onclick="showPage('notes')"><span class="nav-number">02</span>Заметки</button>
+      </div>
+      <div class="system-box">
+        <div class="system-row">СИСТЕМА <b>ONLINE</b></div>
+        <div class="system-row">ХРАНИЛИЩЕ <b>LOCAL</b></div>
+        <div class="system-row">РЕЖИМ <b id="mode-label">BROWSER</b></div>
+        <div class="bars"><i></i><i></i><i></i><i></i><i></i></div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <span class="eyebrow">ЛОКАЛЬНАЯ КОНСОЛЬ</span>
+        <h1 id="page-title">Быстрый пуск</h1>
+        <div class="clock-box"><small><span class="online-dot"></span>ТЕКУЩЕЕ ВРЕМЯ</small><strong id="clock">00:00:00</strong></div>
+      </header>
+
+      <section class="page active" id="page-launchers">
+        <div class="toolbar">
+          <div class="toolbar-copy"><span class="module-code">MODULE / 01</span><p>Программы и файлы, которые нужны под рукой.</p></div>
+          <div class="toolbar-action"><button class="primary" onclick="openModal()">+ ДОБАВИТЬ ЗАПУСК</button></div>
+        </div>
+        <div class="launcher-list" id="launcher-list"></div>
+        <div class="empty" id="empty-state">
+          <div class="empty-icon">+</div>
+          <strong>СПИСОК ПУСТ</strong>
+          <p>Добавьте первый файл или программу.</p>
+          <button onclick="openModal()">СОЗДАТЬ КНОПКУ →</button>
+        </div>
+      </section>
+
+      <section class="page" id="page-notes">
+        <div class="toolbar">
+          <div class="toolbar-copy"><span class="module-code">MODULE / 02</span><p>Локальный блокнот для задач, идей и команд.</p></div>
+          <span class="save-state" id="save-state">СОХРАНЕНО</span>
+        </div>
+        <div class="notes-panel">
+          <div class="notes-meta">OPERATOR NOTES <span class="right" id="char-count">0 / 50000</span></div>
+          <textarea id="notes" maxlength="50000" placeholder="Введите заметку..." oninput="notesChanged()"></textarea>
+          <div class="notes-footer">АВТОСОХРАНЕНИЕ <span class="right">LOCAL STORAGE</span></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal-shade" id="modal-shade">
+    <div class="modal">
+      <div class="modal-head">
+        <span class="module-code">NEW COMMAND</span>
+        <h2>Быстрый запуск</h2>
+        <button class="close-button" onclick="closeModal()">×</button>
+      </div>
+      <input type="hidden" id="edit-id">
+      <label class="field">
+        <span class="field-label">НАЗВАНИЕ</span>
+        <input class="text-input" id="launcher-name" maxlength="64" placeholder="Например: Blender">
+      </label>
+      <label class="field">
+        <span class="field-label">ПУТЬ К ФАЙЛУ</span>
+        <span class="path-row">
+          <input class="text-input" id="launcher-path" maxlength="2048" placeholder="C:\Program Files\...\app.exe">
+          <button class="browse" onclick="chooseFile()">ОБЗОР</button>
+        </span>
+      </label>
+      <div class="error" id="form-error"></div>
+      <div class="modal-actions">
+        <button class="secondary" onclick="closeModal()">ОТМЕНА</button>
+        <button class="primary" onclick="saveLauncher()">СОХРАНИТЬ</button>
+      </div>
+    </div>
+  </div>
+
+  <input type="file" id="file-picker" onchange="fileChosen()">
+  <div class="toast" id="toast"></div>
+
+  <script>
+    (function () {
+      var STORAGE_KEY = 'system-control-panel-v1';
+      var state = { launchers: [], notes: '' };
+      var notesTimer = null;
+      var toastTimer = null;
+      var htaMode = false;
+
+      try {
+        if (window.ActiveXObject) {
+          new ActiveXObject('WScript.Shell');
+          htaMode = true;
+        }
+      } catch (ignore) { htaMode = false; }
+
+      window.showPage = function (page) {
+        document.getElementById('page-launchers').className = page === 'launchers' ? 'page active' : 'page';
+        document.getElementById('page-notes').className = page === 'notes' ? 'page active' : 'page';
+        document.getElementById('nav-launchers').className = page === 'launchers' ? 'nav-button active' : 'nav-button';
+        document.getElementById('nav-notes').className = page === 'notes' ? 'nav-button active' : 'nav-button';
+        document.getElementById('page-title').innerText = page === 'notes' ? 'Заметки' : 'Быстрый пуск';
+      };
+
+      window.openModal = function (id) {
+        var item = null;
+        var i;
+        for (i = 0; i < state.launchers.length; i++) if (state.launchers[i].id === id) item = state.launchers[i];
+        document.getElementById('edit-id').value = item ? item.id : '';
+        document.getElementById('launcher-name').value = item ? item.name : '';
+        document.getElementById('launcher-path').value = item ? item.path : '';
+        document.getElementById('form-error').innerText = '';
+        document.getElementById('modal-shade').className = 'modal-shade visible';
+        document.getElementById('launcher-name').focus();
+      };
+
+      window.closeModal = function () {
+        document.getElementById('modal-shade').className = 'modal-shade';
+      };
+
+      window.chooseFile = function () {
+        document.getElementById('file-picker').click();
+      };
+
+      window.fileChosen = function () {
+        var picker = document.getElementById('file-picker');
+        var value = picker.value || '';
+        if (value.toLowerCase().indexOf('fakepath') >= 0) {
+          showToast('Браузер скрывает полный путь. Вставьте его вручную.', true);
+          return;
+        }
+        document.getElementById('launcher-path').value = value;
+        if (!document.getElementById('launcher-name').value && value) {
+          var parts = value.split('\\');
+          var fileName = parts[parts.length - 1];
+          document.getElementById('launcher-name').value = fileName.replace(/\.[^.]+$/, '');
+        }
+      };
+
+      window.saveLauncher = function () {
+        var id = trim(document.getElementById('edit-id').value);
+        var name = trim(document.getElementById('launcher-name').value);
+        var path = trim(document.getElementById('launcher-path').value).replace(/^"|"$/g, '');
+        var i, found = false;
+        if (!name || !path) {
+          document.getElementById('form-error').innerText = 'Укажите название и полный путь к файлу.';
+          return;
+        }
+        if (!id) id = 'launch-' + new Date().getTime() + '-' + Math.floor(Math.random() * 10000);
+        for (i = 0; i < state.launchers.length; i++) {
+          if (state.launchers[i].id === id) {
+            state.launchers[i] = { id: id, name: name, path: path };
+            found = true;
+            break;
+          }
+        }
+        if (!found) state.launchers.push({ id: id, name: name, path: path });
+        saveState();
+        renderLaunchers();
+        closeModal();
+        showToast(found ? 'Кнопка обновлена' : 'Кнопка добавлена', false);
+      };
+
+      window.removeLauncher = function (id) {
+        var next = [];
+        var i;
+        for (i = 0; i < state.launchers.length; i++) if (state.launchers[i].id !== id) next.push(state.launchers[i]);
+        state.launchers = next;
+        saveState();
+        renderLaunchers();
+        showToast('Кнопка удалена', false);
+      };
+
+      window.runLauncher = function (id) {
+        var item = null;
+        var i;
+        for (i = 0; i < state.launchers.length; i++) if (state.launchers[i].id === id) item = state.launchers[i];
+        if (!item) return;
+        if (htaMode) {
+          try {
+            var shell = new ActiveXObject('WScript.Shell');
+            shell.Run('"' + item.path.replace(/"/g, '') + '"', 1, false);
+          } catch (error) {
+            showToast('Не удалось открыть файл: ' + error.message, true);
+          }
+        } else {
+          showToast('Для запуска программ откройте файл командой mshta.exe index.html', true);
+        }
+      };
+
+      window.notesChanged = function () {
+        var notes = document.getElementById('notes');
+        document.getElementById('char-count').innerText = notes.value.length + ' / 50000';
+        document.getElementById('save-state').innerText = 'СОХРАНЕНИЕ...';
+        if (notesTimer) window.clearTimeout(notesTimer);
+        notesTimer = window.setTimeout(function () {
+          state.notes = notes.value;
+          saveState();
+          document.getElementById('save-state').innerText = 'СОХРАНЕНО';
+        }, 450);
+      };
+
+      function trim(value) { return String(value || '').replace(/^\s+|\s+$/g, ''); }
+      function escapeHtml(value) {
+        return String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+      }
+      function jsString(value) { return String(value).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
+      function extension(path) {
+        var file = path.split('\\').pop();
+        var parts = file.split('.');
+        return parts.length > 1 ? parts.pop().substring(0, 5).toUpperCase() : 'FILE';
+      }
+      function saveState() {
+        try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+        catch (error) { showToast('Не удалось сохранить данные.', true); }
+      }
+      function loadState() {
+        try {
+          var raw = window.localStorage.getItem(STORAGE_KEY);
+          if (raw) state = JSON.parse(raw);
+          if (!state.launchers || Object.prototype.toString.call(state.launchers) !== '[object Array]') state.launchers = [];
+          if (typeof state.notes !== 'string') state.notes = '';
+        } catch (ignore) { state = { launchers: [], notes: '' }; }
+      }
+      function renderLaunchers() {
+        var html = '';
+        var i, item;
+        for (i = 0; i < state.launchers.length; i++) {
+          item = state.launchers[i];
+          html += '<div class="launcher-card">' +
+            '<div class="file-badge">' + escapeHtml(extension(item.path)) + '</div>' +
+            '<div class="launcher-info"><strong class="launcher-name">' + escapeHtml(item.name) + '</strong>' +
+            '<span class="launcher-path" title="' + escapeHtml(item.path) + '">' + escapeHtml(item.path) + '</span></div>' +
+            '<div class="card-actions"><button class="card-button run" onclick="runLauncher(\'' + jsString(item.id) + '\')">ПУСК</button>' +
+            '<button class="card-button" onclick="openModal(\'' + jsString(item.id) + '\')">•••</button>' +
+            '<button class="card-button remove" onclick="removeLauncher(\'' + jsString(item.id) + '\')">×</button></div></div>';
+        }
+        document.getElementById('launcher-list').innerHTML = html;
+        document.getElementById('empty-state').className = state.launchers.length ? 'empty hidden' : 'empty';
+      }
+      function showToast(message, bad) {
+        var toast = document.getElementById('toast');
+        toast.innerText = message;
+        toast.className = bad ? 'toast visible bad' : 'toast visible';
+        if (toastTimer) window.clearTimeout(toastTimer);
+        toastTimer = window.setTimeout(function () { toast.className = 'toast'; }, 3400);
+      }
+      function updateClock() {
+        var date = new Date();
+        function two(number) { return number < 10 ? '0' + number : String(number); }
+        document.getElementById('clock').innerText = two(date.getHours()) + ':' + two(date.getMinutes()) + ':' + two(date.getSeconds());
+      }
+
+      loadState();
+      document.getElementById('mode-label').innerText = htaMode ? 'DESKTOP' : 'BROWSER';
+      document.getElementById('notes').value = state.notes;
+      document.getElementById('char-count').innerText = state.notes.length + ' / 50000';
+      renderLaunchers();
+      updateClock();
+      window.setInterval(updateClock, 1000);
+    }());
+  </script>
+<style>
+ .sidebar .nav{padding-top:14px}.nav-button{height:45px}.jarvis-panel{border:1px solid #35433b;background:#0e1510;padding:22px;margin-bottom:18px}.jarvis-panel h2{font-weight:500;margin-top:0}.jarvis-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:14px 0}.jarvis-row input,.jarvis-row select{min-width:140px;flex:1;background:#080c0a;color:#eef3ef;border:1px solid #35433b;padding:11px}.jarvis-row label{font-size:12px;color:#acb8af}.jarvis-log{height:260px;overflow:auto;border-top:1px solid #26302a;padding-top:10px}.jarvis-message{white-space:pre-wrap;line-height:1.6;border-bottom:1px solid #26302a;padding:12px 0;font-size:13px}.jarvis-message a{color:#8dff78}.jarvis-hint{font-size:12px;color:#9aa89f;line-height:1.7}.task-item{padding:15px 0;border-bottom:1px solid #35433b;display:flex;gap:12px;align-items:center}.task-item .task-copy{flex:1}.task-item small{display:block;color:#9aa89f;margin-top:5px}.task-item.done .task-copy{text-decoration:line-through;opacity:.5}.code-editor{width:100%;height:210px;background:#080c0a;color:#b4ffa2;padding:15px;border:1px solid #35433b;font:13px/1.6 Consolas,monospace;resize:vertical}.jarvis-row .wide{flex-basis:100%}.mic-on{box-shadow:0 0 0 2px #8dff78}.jarvis-row button:disabled{opacity:.4;cursor:default}
+ .jarvis-row input[type=checkbox]{min-width:0;width:auto;flex:none;margin-right:7px}.jarvis-row label{display:inline-flex;align-items:center;gap:7px}
+</style>
+<script>
+(function () {
+  'use strict';
+  // Голосовая часть требует современный Chrome/Edge. Старый HTA сохраняет прежний интерфейс.
+  if (!window.fetch || !window.Promise) return;
+  var $ = function (id) { return document.getElementById(id); };
+  var KEY = 'jarvis-workspace-v1';
+  var data;
+  try { data = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) {}
+  data = Object.assign({ tasks: [], commands: [], city: 'Владивосток', voice: '', speech: true, custom: false }, data || {});
+  var recognition = null, listening = false, speaking = false, busy = false, wakeUntil = 0, retry = null;
+  var native = location.origin === 'http://127.0.0.1:4317';
+  var nav = document.querySelector('.nav');
+  [['assistant','03','Jarvis'],['tasks','04','Дела'],['commands','05','Команды']].forEach(function (entry) {
+    var button = document.createElement('button');
+    button.className = 'nav-button'; button.id = 'nav-' + entry[0];
+    button.textContent = entry[1] + '    ' + entry[2];
+    button.onclick = function () { window.showPage(entry[0]); }; nav.appendChild(button);
+  });
+  var originalPage = window.showPage;
+  window.showPage = function (page) {
+    originalPage(page);
+    document.querySelectorAll('.page').forEach(function (p) { p.classList.toggle('active', p.id === 'page-' + page); });
+    document.querySelectorAll('.nav-button').forEach(function (p) { p.classList.toggle('active', p.id === 'nav-' + page); });
+    $('page-title').textContent = ({launchers:'Быстрый пуск',notes:'Заметки',assistant:'Jarvis',tasks:'Дела',commands:'Команды'})[page];
+  };
+  function page(id, html) {
+    var section = document.createElement('section'); section.className = 'page'; section.id = 'page-' + id;
+    section.innerHTML = html; document.querySelector('.main').appendChild(section);
+  }
+  page('assistant', '<div class="jarvis-panel"><span class="module-code">VOICE CONTROL / JARVIS</span><h2>На связи, когда нужен</h2><div class="jarvis-row"><button class="primary" id="mic-start">ВКЛЮЧИТЬ МИКРОФОН</button><button class="secondary" id="mic-stop">ВЫКЛЮЧИТЬ</button><span id="mic-status">Микрофон выключен</span></div><div class="jarvis-row"><label>Город <input id="weather-city"></label><select id="voice-select" aria-label="Голос"></select><label><input type="checkbox" id="speech-enabled"> Голосовые ответы</label><button class="secondary" id="test-voice">ПРОВЕРИТЬ ГОЛОС</button></div><p class="jarvis-hint">«Джарвис, открой Blender» · «Джарвис, добавь дело завтра в 15:00 купить продукты» · «Джарвис, открой сайт example.com» · «Джарвис, какая погода» · «Джарвис, курс доллара» · «Джарвис, что такое фотосинтез»</p><div class="jarvis-row"><input id="chat-input" placeholder="Или напишите команду здесь"><button class="primary" id="chat-send">ОТПРАВИТЬ</button></div><div class="jarvis-log" id="jarvis-log" role="log" aria-live="polite"></div></div><p class="jarvis-hint">Распознавание зависит от браузера и доступа к его речевому сервису. При включённом микрофоне речь может обрабатываться сервисом браузера. Имя Jarvis фильтруется после распознавания. Микрофон включается только вашей кнопкой.</p>');
+  page('tasks', '<div class="jarvis-panel"><span class="module-code">TASKS / ПЛАНИРОВАНИЕ</span><h2>Ваши дела</h2><input type="hidden" id="task-id"><div class="jarvis-row"><input id="task-title" maxlength="200" placeholder="Название дела"><input id="task-date" type="date" aria-label="Дата"><input id="task-time" type="time" aria-label="Время"></div><div class="jarvis-row"><input id="task-details" maxlength="2000" placeholder="Описание, необязательно"><button class="primary" id="task-save">СОХРАНИТЬ ДЕЛО</button><button class="secondary" id="task-reset">СБРОСИТЬ</button></div><div id="task-list"></div></div>');
+  page('commands', '<div class="jarvis-panel"><span class="module-code">COMMANDS / РУЧНОЕ ДОБАВЛЕНИЕ</span><h2>Пользовательские команды</h2><p class="jarvis-hint">Укажите точные фразы через точку с запятой и тело async-функции JavaScript. Доступно: await api.say(text), await api.open(pathOrUrl), api.addTask({title,date,time,details}), await api.weather(city), await api.currency("USD"), await api.search(question). Код имеет доступ к данным страницы — вставляйте только проверенный код.</p><label><input type="checkbox" id="custom-enabled"> Разрешить выполнение моих команд</label><input type="hidden" id="command-id"><div class="jarvis-row"><input id="command-name" maxlength="100" placeholder="Название команды"><input id="command-phrases" maxlength="500" placeholder="Фразы: рабочий режим; начинаем работу"></div><textarea class="code-editor" id="command-code" spellcheck="false"></textarea><div class="jarvis-row"><button class="primary" id="command-save">СОХРАНИТЬ КОМАНДУ</button><button class="secondary" id="command-reset">НОВАЯ</button></div><div id="command-list"></div></div>');
+  function save() { localStorage.setItem(KEY, JSON.stringify(data)); }
+  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
+  function norm(text) { return text.toLowerCase().replace(/ё/g,'е').replace(/[!?.,]/g,'').replace(/\s+/g,' ').trim(); }
+  function log(text, source) {
+    var div = document.createElement('div'); div.className = 'jarvis-message'; div.textContent = text;
+    if (source) { var a = document.createElement('a'); a.href = source; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.textContent = ' Источник ↗'; div.appendChild(a); }
+    $('jarvis-log').appendChild(div); $('jarvis-log').scrollTop = $('jarvis-log').scrollHeight;
+  }
+  function say(text, source) {
+    log('Jarvis: ' + text, source);
+    if (!data.speech || !window.speechSynthesis) return Promise.resolve();
+    return new Promise(function (resolve) {
+      speaking = true;
+      if (recognition) try { recognition.abort(); } catch(e) {}
+      var utterance = new SpeechSynthesisUtterance(text); utterance.lang = 'ru-RU';
+      utterance.voice = speechSynthesis.getVoices().find(function(v) { return v.name === data.voice; }) || null;
+      var finished = false;
+      function done() { if (finished) return; finished = true; speaking = false; resolve(); if (listening) scheduleRecognition(); }
+      utterance.onend = done; utterance.onerror = done;
+      speechSynthesis.speak(utterance);
+    });
+  }
+  async function request(route, options) {
+    if (!native) throw new Error('Откройте панель через Start-Jarvis.cmd по адресу http://127.0.0.1:4317.');
+    var response = await fetch(route, Object.assign({ headers: {'X-Control-Panel':'1','Content-Type':'application/json'} }, options || {}));
+    var result = await response.json(); if (!response.ok) throw new Error(result.error || 'Ошибка запроса'); return result;
+  }
+  async function info(provider, params) {
+    var query = new URLSearchParams(Object.assign({provider:provider}, params || {}));
+    return request('/api/info?' + query);
+  }
+  async function open(target) { await request('/api/open', {method:'POST',body:JSON.stringify({target:target})}); }
+  window.runLauncher = async function(id) {
+    try {
+      var state = JSON.parse(localStorage.getItem('system-control-panel-v1') || '{}');
+      var item = (state.launchers || []).find(function(x) { return x.id === id; });
+      if (item) await open(item.path);
+    } catch(e) { await say(e.message); }
+  };
+  async function weather(city) {
+    city = city || data.city;
+    var cities = await info('city',{name:city,count:1,language:'ru'});
+    if (!cities.results || !cities.results.length) throw new Error('Не удалось найти город ' + city);
+    var place = cities.results[0];
+    var result = await info('weather',{latitude:place.latitude,longitude:place.longitude,current:'temperature_2m,apparent_temperature,weather_code,wind_speed_10m',timezone:'auto'});
+    var c = result.current, code = c.weather_code;
+    var description = code === 0 ? 'ясно' : code <= 3 ? 'облачно' : code <= 48 ? 'туман' : code <= 67 ? 'дождь' : code <= 77 ? 'снег' : code <= 82 ? 'ливень' : code <= 86 ? 'снегопад' : 'гроза';
+    await say(place.name + ': ' + description + ', ' + c.temperature_2m + ' градусов. Ощущается как ' + c.apparent_temperature + '. Ветер ' + c.wind_speed_10m + ' километров в час. Данные на ' + c.time.replace('T',' ') + ' по местному времени города.', 'https://open-meteo.com/');
+  }
+  async function currency(code) {
+    var result = await info('currency'), item = result.Valute[String(code).toUpperCase()];
+    if (!item) throw new Error('Эта валюта не найдена. Поддерживаются коды ЦБ, например USD, EUR, CNY.');
+    await say('Курс ЦБ на ' + new Date(result.Date).toLocaleDateString('ru-RU') + ': ' + item.Nominal + ' ' + item.Name + ' — ' + item.Value.toFixed(2) + ' рубля. Курс банка при обмене может отличаться.', 'https://www.cbr.ru/currency_base/daily/');
+  }
+  async function search(question) {
+    var result = await info('search',{action:'query',format:'json',generator:'search',gsrsearch:question,gsrlimit:1,prop:'extracts',exintro:1,explaintext:1,exsentences:3});
+    var pages = result.query && result.query.pages;
+    if (!pages) return say('Не нашёл справочного ответа. Попробуйте уточнить вопрос.');
+    var article = pages[Object.keys(pages)[0]];
+    await say(article.extract || 'Найдена статья: ' + article.title, 'https://ru.wikipedia.org/?curid=' + article.pageid);
+  }
+  function addTask(task) {
+    if (!task || !String(task.title || '').trim()) throw new Error('Укажите название дела.');
+    if (task.date && !/^\d{4}-\d{2}-\d{2}$/.test(task.date)) throw new Error('Дата должна быть в формате ГГГГ-ММ-ДД.');
+    if (task.time && !/^([01]\d|2[0-3]):[0-5]\d$/.test(task.time)) throw new Error('Время должно быть в формате ЧЧ:ММ.');
+    data.tasks.push({id:uid(),title:String(task.title).slice(0,200),date:task.date || '',time:task.time || '',details:String(task.details || '').slice(0,2000),done:false}); save(); renderTasks();
+  }
+  function button(text, action) { var b = document.createElement('button'); b.className='secondary'; b.textContent=text; b.onclick=action; return b; }
+  function renderTasks() {
+    $('task-list').replaceChildren();
+    if (!data.tasks.length) $('task-list').textContent = 'Пока нет дел.';
+    data.tasks.slice().sort(function(a,b){return (a.date+a.time).localeCompare(b.date+b.time);}).forEach(function(task) {
+      var row=document.createElement('div'); row.className='task-item'+(task.done?' done':'');
+      var checkbox=document.createElement('input'); checkbox.type='checkbox'; checkbox.checked=task.done;
+      checkbox.onchange=function(){task.done=checkbox.checked;save();renderTasks();};
+      var copy=document.createElement('div'); copy.className='task-copy'; copy.textContent=task.title;
+      var small=document.createElement('small'); small.textContent=(task.date || 'Без даты')+' '+task.time+(task.details?' · '+task.details:''); copy.appendChild(small);
+      row.append(checkbox,copy,button('ИЗМЕНИТЬ',function(){['id','title','date','time','details'].forEach(function(k){$('task-'+k).value=task[k] || '';});}),button('×',function(){data.tasks=data.tasks.filter(function(x){return x.id!==task.id;});save();renderTasks();}));
+      $('task-list').appendChild(row);
+    });
+  }
+  $('task-reset').onclick=function(){['id','title','date','time','details'].forEach(function(k){$('task-'+k).value='';});};
+  $('task-save').onclick=function(){
+    try {
+      var id=$('task-id').value;
+      var task={title:$('task-title').value,date:$('task-date').value,time:$('task-time').value,details:$('task-details').value};
+      addTask(task);
+      if(id){ data.tasks=data.tasks.filter(function(x){return x.id!==id;});save();renderTasks(); }
+      $('task-reset').click();
+    }catch(e){say(e.message);}
+  };
+  var template='await api.say("Открываю рабочие инструменты.");\nawait api.open("https://calendar.google.com");';
+  $('command-code').value=template;
+  function renderCommands(){
+    $('command-list').replaceChildren();
+    data.commands.forEach(function(command){
+      var row=document.createElement('div');row.className='task-item';
+      var copy=document.createElement('div');copy.className='task-copy';copy.textContent=command.name+' — '+command.phrases.join('; ');
+      row.append(copy,button('ИЗМЕНИТЬ',function(){$('command-id').value=command.id;$('command-name').value=command.name;$('command-phrases').value=command.phrases.join('; ');$('command-code').value=command.code;}),button('×',function(){data.commands=data.commands.filter(function(x){return x.id!==command.id;});save();renderCommands();}));$('command-list').appendChild(row);
+    });
+  }
+  $('command-reset').onclick=function(){$('command-id').value='';$('command-name').value='';$('command-phrases').value='';$('command-code').value=template;};
+  $('command-save').onclick=function(){
+    try{
+      var name=$('command-name').value.trim(),phrases=$('command-phrases').value.split(';').map(norm).filter(Boolean),code=$('command-code').value;
+      if(!name || !phrases.length)throw new Error('Укажите название и хотя бы одну фразу.');
+      new Function('api','text','return (async function(){'+code+'\n}).call(null);');
+      var id=$('command-id').value || uid();data.commands=data.commands.filter(function(x){return x.id!==id;});
+      data.commands.push({id:id,name:name,phrases:phrases,code:code});save();renderCommands();$('command-reset').click();say('Команда сохранена.');
+    }catch(e){say('Команда не сохранена: '+e.message);}
+  };
+  $('custom-enabled').checked=data.custom;$('custom-enabled').onchange=function(){data.custom=this.checked;save();};
+  function parseTask(text){
+    var title=text.replace(/^добавь (?:дело|задачу)\s*/i,'');var day=new Date(),date='',time='';
+    var match=title.match(/\b(\d{4}-\d{2}-\d{2})\b/);
+    if(match){date=match[1];title=title.replace(match[0],'');}
+    else if(/послезавтра|завтра|сегодня/i.test(title)){day.setDate(day.getDate()+(/послезавтра/i.test(title)?2:/завтра/i.test(title)?1:0));date=day.getFullYear()+'-'+String(day.getMonth()+1).padStart(2,'0')+'-'+String(day.getDate()).padStart(2,'0');title=title.replace(/послезавтра|завтра|сегодня/i,'');}
+    match=title.match(/(?:в\s*)?(\d{1,2})[:.](\d{2})/);
+    if(match){time=match[1].padStart(2,'0')+':'+match[2];title=title.replace(match[0],'');}
+    addTask({title:title.trim(),date:date,time:time});
+    return 'Дело добавлено: '+title.trim()+'. '+(date || 'Без даты')+' '+time+'.';
+  }
+  async function handle(text){
+    if(busy)return;busy=true;log('Вы: '+text);
+    try{
+      text=text.replace(/^.*?(?:jarvis|джарвис|джервис)[\s,.:!-]*/i,'').trim();var n=norm(text);
+      var custom=data.custom && data.commands.find(function(c){return c.phrases.indexOf(n)>=0;});
+      if(custom){await new Function('api','text','return (async function(){'+custom.code+'\n}).call(null);')({say:say,open:open,addTask:addTask,weather:weather,currency:currency,search:search},text);}
+      else if(/^добавь (дело|задачу)/.test(n))await say(parseTask(text));
+      else if(/погода|погоду/.test(n))await weather();
+      else if(/курс/.test(n)){var code=/евро/.test(n)?'EUR':/юан/.test(n)?'CNY':/доллар/.test(n)?'USD':(text.match(/\b[A-Z]{3}\b/i)||[])[0];if(!code)await say('Уточните валюту: доллар, евро, юань или её трёхбуквенный код.');else await currency(code);}
+      else if(/^открой\s+(?:сайт|ссылку)\s+/i.test(text)){var url=text.replace(/^открой\s+(?:сайт|ссылку)\s+/i,'').trim();if(!/^https?:\/\//i.test(url))url='https://'+url;var parsed=new URL(url);if(!/^https?:$/.test(parsed.protocol)||!parsed.hostname.includes('.'))throw new Error('Назовите полный домен, например example.com.');await open(parsed.href);await say('Открываю '+parsed.hostname);}
+      else if(/^открой\s+/.test(n)){
+        var name=n.replace(/^открой\s+(программу\s+)?/,'');var launch=JSON.parse(localStorage.getItem('system-control-panel-v1') || '{}');
+        var item=(launch.launchers || []).find(function(x){return norm(x.name)===name;});
+        if(!item)await say('Добавьте программу в быстрый пуск с таким названием. Для английского названия можно указать русское произношение.');else{await open(item.path);await say('Открываю '+item.name);}
+      }
+      else if(/который час|сколько времени/.test(n))await say(new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'}));
+      else if(/выключи микрофон|не слушай/.test(n)){$('mic-stop').click();await say('Микрофон выключен.');}
+      else if(/^(привет|ты здесь|ты тут)$/.test(n))await say('На связи. Слушаю вас.');
+      else await search(text.replace(/^(найди|поищи)\s+/i,''));
+    }catch(e){await say(e.message);}finally{busy=false;}
+  }
+  $('chat-send').onclick=function(){var text=$('chat-input').value.trim();if(text){$('chat-input').value='';handle(text);}};
+  $('chat-input').onkeydown=function(e){if(e.key==='Enter')$('chat-send').click();};
+  $('weather-city').value=data.city;$('weather-city').onchange=function(){data.city=this.value.trim() || 'Владивосток';save();};
+  $('speech-enabled').checked=data.speech;$('speech-enabled').onchange=function(){data.speech=this.checked;save();if(!data.speech&&window.speechSynthesis){speechSynthesis.cancel();speaking=false;if(listening)scheduleRecognition();}};
+  function voices(){if(!window.speechSynthesis)return;var select=$('voice-select');select.replaceChildren();var auto=document.createElement('option');auto.value='';auto.textContent='Системный русский голос';select.appendChild(auto);speechSynthesis.getVoices().forEach(function(v){if(/^ru/i.test(v.lang)){var option=document.createElement('option');option.value=v.name;option.textContent=v.name;select.appendChild(option);}});select.value=data.voice;}
+  if(window.speechSynthesis){voices();speechSynthesis.addEventListener('voiceschanged',voices);}
+  $('voice-select').onchange=function(){data.voice=this.value;save();};$('test-voice').onclick=function(){say('Добрый день. Я Джарвис, ваш помощник.');};
+  var Recognition=window.SpeechRecognition || window.webkitSpeechRecognition;
+  function status(text){$('mic-status').textContent=text;$('mic-start').classList.toggle('mic-on',listening);$('mic-start').disabled=listening;$('mic-stop').disabled=!listening;}
+  function scheduleRecognition(){clearTimeout(retry);retry=setTimeout(function(){if(listening&&!speaking)try{recognition.start();}catch(e){}},350);}
+  $('mic-start').onclick=function(){
+    if(!Recognition){status('Нет поддержки распознавания. Используйте Chrome или Edge.');return;}
+    if(!window.isSecureContext){status('Откройте http://127.0.0.1:4317 для доступа к микрофону.');return;}
+    if(!recognition){
+      recognition=new Recognition();recognition.lang='ru-RU';recognition.continuous=true;recognition.interimResults=false;
+      recognition.onstart=function(){status('Слушаю. Обратитесь: «Джарвис…»');};
+      recognition.onresult=function(event){
+        if(!listening||speaking||busy)return;
+        for(var i=event.resultIndex;i<event.results.length;i++){
+          if(!event.results[i].isFinal)continue;var text=event.results[i][0].transcript.trim();
+          if(/jarvis|джарвис|джервис/i.test(text)){
+            var command=text.replace(/^.*?(?:jarvis|джарвис|джервис)[\s,.:!-]*/i,'').trim();
+            if(command){wakeUntil=0;handle(command);}else{wakeUntil=Date.now()+10000;status('Да, слушаю команду…');}
+          }else if(Date.now()<wakeUntil){wakeUntil=0;handle(text);}
+        }
+      };
+      recognition.onerror=function(event){
+        if(['not-allowed','service-not-allowed','audio-capture','network','language-not-supported'].includes(event.error)){listening=false;clearTimeout(retry);try{recognition.abort();}catch(e){}status('Распознавание остановлено: '+event.error+'. Проверьте разрешения микрофона и интернет.');}
+      };
+      recognition.onend=function(){if(listening&&!speaking)scheduleRecognition();};
+    }
+    listening=true;wakeUntil=0;status('Подключение микрофона…');try{recognition.start();}catch(e){listening=false;status(e.message);}
+  };
+  $('mic-stop').onclick=function(){listening=false;wakeUntil=0;clearTimeout(retry);if(recognition)recognition.abort();status('Микрофон выключен');};
+  window.addEventListener('beforeunload',function(){listening=false;clearTimeout(retry);if(recognition)recognition.abort();stateNotesFlush();});
+  function stateNotesFlush(){data.city=$('weather-city').value.trim() || data.city;save();}
+  status('Микрофон выключен');renderTasks();renderCommands();window.showPage('assistant');
+  if(native)$('mode-label').textContent='LOCAL SERVER';
+  log('Jarvis готов. Включите микрофон или напишите команду. '+(native?'Локальный запуск подключён.':'Для открытия программ запустите Start-Jarvis.cmd.'));
+}());
+</script>
+</body>
+</html>
